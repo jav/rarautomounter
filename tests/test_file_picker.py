@@ -123,3 +123,35 @@ class test(unittest.TestCase):
             except OSError as exc:
                 if exc.errno != errno.ENOENT:  # ENOENT - no such file or directory
                     raise  # re-raise exception
+
+
+    def test_get_rar_from_recursive_dirs(self):
+        try:
+            needle_rar = "needle.rar"
+            root_dir = tempfile.mkdtemp()
+
+            dir_structure = [
+                [os.path.join(root_dir, "dir_1"), "a%s"%needle_rar],
+                [os.path.join(root_dir, "dir_1", "dir_2"), "b%s"%needle_rar],
+                [os.path.join(root_dir, "dir_1", "dir_2", "dir_3"), "c%s"%needle_rar]
+            ]
+
+            for (d, needle) in dir_structure:
+                os.mkdir(d)
+                for f in ["test.rrar", needle]: 
+                    open(os.path.join(d, f), 'a').close()
+        
+            fp = file_picker.FilePicker()
+            fp.set(root_dir)
+            log.debug(list(fp.get_rars()))
+            self.assertEquals(
+                dir_structure, 
+                list(fp.get_rars())
+            )
+
+        finally:
+            try:
+                shutil.rmtree(root_dir)  # delete directory
+            except OSError as exc:
+                if exc.errno != errno.ENOENT:  # ENOENT - no such file or directory
+                    raise  # re-raise exception
