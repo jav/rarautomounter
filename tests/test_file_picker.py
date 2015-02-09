@@ -74,3 +74,52 @@ class test(unittest.TestCase):
             except OSError as exc:
                 if exc.errno != errno.ENOENT:  # ENOENT - no such file or directory
                     raise  # re-raise exception
+
+    def test_get_rar_variants_from_dirs(self):
+        try:
+            needle_rar = "needle.rar"
+            root_dir = tempfile.mkdtemp()
+            os.mkdir(os.path.join(root_dir, "dir"))
+            
+            needle_rar = "needle.rar"
+            needle_r00 = "needle.r00"
+            needle_000 = "needle.000"
+
+            dir_structure = [
+                ["dir1", ["test", "test.00x", "rar", needle_rar]],
+                ["dir2", ["test", "test.00x", "rar", needle_000, needle_r00, needle_rar]],
+                ["dir3", ["test", "test.00x", "rar", needle_r00, needle_rar, needle_000]],
+                ["dir4", ["test", "test.00x", "rar", needle_rar, needle_000, needle_r00]],
+                ["dir5", ["test", "test.00x", "rar", needle_000, needle_r00]],
+                ["dir6", ["test", "test.00x", "rar", needle_r00, needle_000]],
+                ["dir7", ["test", "test.00x", "rar", needle_000]],
+            ]
+# variant 1 Plain rar
+            for (d, files) in dir_structure :
+                os.mkdir(os.path.join(root_dir, d))
+                for f in files:
+                    open(os.path.join(root_dir,d, f), 'a').close()
+
+            fp = file_picker.FilePicker()
+            fp.set(root_dir)
+            log.debug(list(fp.get_rars()))
+            self.assertEquals(7, sum(1 for i in fp.get_rars()))
+            self.assertEquals(
+                [
+                    [os.path.join(root_dir, 'dir1'), needle_rar],
+                    [os.path.join(root_dir, 'dir2'), needle_rar],
+                    [os.path.join(root_dir, 'dir3'), needle_rar],
+                    [os.path.join(root_dir, 'dir4'), needle_rar],
+                    [os.path.join(root_dir, 'dir5'), needle_r00],
+                    [os.path.join(root_dir, 'dir6'), needle_r00],
+                    [os.path.join(root_dir, 'dir7'), needle_000],
+                ], 
+                list(fp.get_rars())
+            )
+
+        finally:
+            try:
+                shutil.rmtree(root_dir)  # delete directory
+            except OSError as exc:
+                if exc.errno != errno.ENOENT:  # ENOENT - no such file or directory
+                    raise  # re-raise exception

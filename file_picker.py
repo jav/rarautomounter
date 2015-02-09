@@ -1,4 +1,5 @@
 import errno
+import logging
 import os
 
 class FilePicker:
@@ -13,12 +14,19 @@ class FilePicker:
         
         self.flag_is_traversing_files = True
         
+        ext_prio = ['.rar', '.r00', '.000']
         for dir_name, subdirs, files in os.walk(root_dir):
-            print('Found directory: %s' % dir_name)
+            found_file = None
             for file_name in files:
-                print('\t%s' % file_name)
-                if os.path.splitext(file_name)[1] == ".rar":
-                    self.file_list.append([dir_name, file_name])
+                ext = os.path.splitext(file_name)[1]
+                if ext in ext_prio:
+                    if found_file is None:
+                        found_file = file_name
+                    elif ext_prio.index( ext ) < ext_prio.index(os.path.splitext(found_file)[1]): 
+                        found_file = file_name
+
+            if found_file is not None:
+                self.file_list.append([dir_name, found_file])
 
 
         self.flag_is_traversing_files = False
