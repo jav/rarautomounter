@@ -9,16 +9,27 @@ import os
 
 
 parser = argparse.ArgumentParser(description='Mount a compress filed as a dir.')
-parser.add_argument('-d', '--base-dir', dest="basedir", required=True,
+parser.add_argument('-d', '--base-dir', dest="basedir",
+						required=True,
 						help='Base directory.')
-parser.add_argument('-l', '--make-links', nargs='+', default=[],
+parser.add_argument('-l', '--make-links', nargs='+',
+						default=[],
 						help='Automatically add a link to any files that matches fileendings (e.g. "--make-link avi mkv mp4")')
-parser.add_argument('-n', dest='noop', action='store_true', default=False,
+parser.add_argument('-n', dest='noop', action='store_true',
+						default=False,
 						help='All actions become noops')
+parser.add_argument('--mount-command',
+						default="archivemount",
+						help='Mount command.')
+parser.add_argument('--mount-options', nargs='+',
+						default=['readonly', 'allow_other'],
+						help="Optional arguments for the mount command. Each element has '-o' prepended.")
+
+
 
 args = parser.parse_args()
 
-def mount(dest, source):
+def mount(dest, source, mount_command, mount_options):
 	print "mount(): dest: %s, source: %s" % (dest, source)
 
 def symlink(dest, dir_to_scan, ext):
@@ -27,8 +38,10 @@ def symlink(dest, dir_to_scan, ext):
 def main(**kwargs):
 	print "kwargs", kwargs
 	basedir = kwargs['basedir'] #break if this fails
-	noop = kwargs.get('noop', False)
-	make_links = kwargs.get('make_links', False)
+	noop = kwargs['noop']
+	make_links = kwargs['make_links']
+	mount_command = kwargs['mount_command']
+	mount_options = kwargs['mount_options']
 
 
 	fp = file_picker.FilePicker()
