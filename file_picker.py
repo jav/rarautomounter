@@ -3,6 +3,11 @@ import logging
 import os
 
 class FilePicker:
+    def __repr__(self):
+        return "FilePicker()"
+    def __str__(self):
+        return "root_dir: %s"%(self.root_dir, )
+
     def __init__(self):
         self.flag_is_traversing_files = False
         self.file_list = []
