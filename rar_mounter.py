@@ -64,16 +64,22 @@ def symlink(dest, dir_to_scan, ext, noop):
 		if ext == os.path.splitext(f)[1].replace('.', ''):
 			print "link %s as %s" % (os.path.abspath(os.path.join(dir_to_scan, f)), os.path.join(dest, f))
 			if not noop:
-				os.symlink(
-					os.path.abspath(os.path.join(dir_to_scan, f)),
-					os.path.join(dest, f)
-					)
+				try:
+					os.symlink(
+						os.path.abspath(os.path.join(dir_to_scan, f)),
+						os.path.join(dest, f)
+						)
+				except:
+					pass # Because I don't know how to handle a failure of this
 
 def create_mountpoint(mountpoint, noop):
 	if len(os.listdir(mountpoint)) != 0:
 		warn("mountpoint (%s) is not empty."%(mountpoint, ))
 		if not noop:
-			os.makedirs(dest)
+			try:
+				os.makedirs(mountpoint)
+			except OSError as exc:
+				warn(exc)
 		else:
 			print "create dir %s"%mountpoint
 
