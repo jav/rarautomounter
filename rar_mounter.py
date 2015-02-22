@@ -31,7 +31,10 @@ parser.add_argument('--umount-command',
 						help="Umount command.")
 parser.add_argument('--umount-options', nargs='*',
 						default=['u', 'z'])
-
+parser.add_argument('--actions-log', dest="actions_log_fh",
+						type=argparse.FileType('w'),
+						default="actions.log",
+						help="Actions log for cleanup operations.")
 
 
 args = parser.parse_args()
@@ -42,7 +45,10 @@ def error(err_str):
 def warn(warn_str):
 	sys.stderr.write("Warning: %s\n"% (warn_str, ))
 
-def mount(dest, source, mount_command, mount_options, noop):
+def actions_log(fh, cmd, arg):
+	fh.write("%s %s\n"%(cmd, arg))
+
+def mount(dest, source, mount_command, mount_options, actions_log_fh, noop):
 	''' Attempt to create a mountpoint and mount the compressed file to there.'''
 	mount_cmd = [mount_command, source, dest]
 	for mount_option in mount_options:
@@ -55,29 +61,36 @@ def mount(dest, source, mount_command, mount_options, noop):
 		print "mount(): subprocess.call(%s)" % (mount_cmd, )
 	if not noop:
 		print "subprocess.call(%s)" % (mount_cmd, )
-		subprocess.call(mount_cmd)
+		ret = subprocess.call(mount_cmd)
+		if ret == 0:
+			actions_log(actions_log_fh, "mount", dest)
 
-def symlink(dest, dir_to_scan, ext, noop):
+def symlink(dest, dir_to_scan, ext, actions_log_fh, noop):
 	'''Scan a mountpoint for files with extentions and
 	   create symlinks to them.'''
 	for f in os.listdir(dir_to_scan):
 		if ext == os.path.splitext(f)[1].replace('.', ''):
 			print "link %s as %s" % (os.path.abspath(os.path.join(dir_to_scan, f)), os.path.join(dest, f))
 			if not noop:
+				#TODO: if the file exists, and is not a symlink, abort
+				#TODO :if the file exists and is a symlink, remove it
+				#create the symlink
 				try:
 					os.symlink(
 						os.path.abspath(os.path.join(dir_to_scan, f)),
 						os.path.join(dest, f)
 						)
+					actions_log(actions_log_fh, "symlink", os.path.join(dest,f))
 				except:
 					pass # Because I don't know how to handle a failure of this
 
-def create_mountpoint(mountpoint, noop):
+def create_mountpoint(mountpoint, actions_log_fh, noop):
 	if len(os.listdir(mountpoint)) != 0:
 		warn("mountpoint (%s) is not empty."%(mountpoint, ))
 		if not noop:
 			try:
 				os.makedirs(mountpoint)
+				actions_log(actions_log_fh, "mk_mountpoint", os.path.join(dest,f))
 			except OSError as exc:
 				warn(exc)
 		else:
@@ -112,6 +125,7 @@ def main(**kwargs):
 	umount_command = kwargs['umount_command']
 	umount_options = kwargs['umount_options']
 
+	actions_log_fh = kwargs['actions_log_fh']
 
 
 	fp = file_picker.FilePicker()
@@ -123,15 +137,15 @@ def main(**kwargs):
 		mountpoint = "%s.mountpoint" % full_file_name
 		source = full_file_name
 		
-		create_mountpoint(mountpoint, noop)
+		create_mountpoint(mountpoint, actions_log_fh, noop)
 		if os.listdir(mountpoint) > 0:
 			umount(mountpoint, umount_command, umount_options, noop)
 
-		mount(mountpoint, source, mount_command, mount_options, noop)
+		mount(mountpoint, source, mount_command, mount_options, actions_log_fh, noop)
 
 		for ext in make_links:
 			dir_to_scan = mountpoint
-			symlink(dir_name, mountpoint, ext, noop)
+			symlink(dir_name, mountpoint, ext, actions_log_fh, noop)
 
 
 	
