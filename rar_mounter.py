@@ -9,7 +9,7 @@ import logging
 import os
 import subprocess
 import sys
-
+import time
 
 
 def error(err_str):
@@ -63,17 +63,22 @@ def symlink(dest, dir_to_scan, ext, actions_log_fh, noop):
 					pass # Because I don't know how to handle a failure of this
 
 def create_mountpoint(mountpoint, actions_log_fh, noop):
+	'''Assumes "mountpoint" is not already a directory.'''
 	logging.debug("create_mountpoint(mountpoint: %s, actions_log_fh: %s, noop: %s)"%(mountpoint, actions_log_fh, noop))
-	if len(os.listdir(mountpoint)) != 0:
-		warn("mountpoint (%s) is not empty."%(mountpoint, ))
-		if not noop:
-			try:
-				os.makedirs(mountpoint)
-				actions_log(actions_log_fh, "mk_mountpoint", os.path.join(dest,f))
-			except OSError as exc:
-				warn(exc)
-		else:
-			print "create dir %s"%mountpoint
+
+	if not noop:
+		try:
+			logging.debug("create_mountpoint(): Trying to create dir: %s", mountpoint)
+			os.makedirs(mountpoint)
+			actions_log(actions_log_fh, "mk_mountpoint", mountpoint)
+			return True
+		except OSError as exc:
+			warn(exc)
+			return False
+	else:
+		print "create dir %s"%mountpoint
+		return True
+
 
 def umount(d, umount_command, umount_options, noop):
 	logging.debug("umount(d: %s, umount_command: %s, umount_options: %s, noop: %s)"%(d, umount_command, umount_options, noop))
@@ -117,12 +122,18 @@ def main(**kwargs):
 		mountpoint = "%s.mountpoint" % full_file_name
 		source = full_file_name
 		
-		create_mountpoint(mountpoint, actions_log_fh, noop)
-		if os.listdir(mountpoint) > 0:
-			umount(mountpoint, umount_command, umount_options, noop)
+		if os.path.isdir(mountpoint):
+			if os.listdir(mountpoint) > 0:
+				umount(mountpoint, umount_command, umount_options, noop)
+				if os.listdir(mountpoint) > 0:
+					error("Mountpoint %s already exists and contains (%s) files. Could not unmount."%(mountpoint, len(os.listdir(mountpoint))))
+					continue
+		else:
+			create_mountpoint(mountpoint, actions_log_fh, noop)
 
 		mount(mountpoint, source, mount_command, mount_options, actions_log_fh, noop)
-
+		time.sleep(1)
+		logging.debug("OS.LISTDIR(%s): %s"%(mountpoint, os.listdir(mountpoint)))
 		for ext in make_links:
 			dir_to_scan = mountpoint
 			symlink(dir_name, mountpoint, ext, actions_log_fh, noop)
