@@ -23,13 +23,13 @@ parser.add_argument('-n', dest='noop', action='store_true',
 parser.add_argument('--mount-command',
 						default="archivemount",
 						help='Mount command.')
-parser.add_argument('--mount-options', nargs='+',
+parser.add_argument('--mount-options', nargs='*',
 						default=['readonly', 'allow_other'],
 						help="Optional arguments for the mount command. Single chars have '-' prepended, longer strings have '-o ' prepended.")
 parser.add_argument('--umount-command',
 						default="fusermount",
 						help="Umount command.")
-parser.add_argument('--umount-options', nargs='+',
+parser.add_argument('--umount-options', nargs='*',
 						default=['u', 'z'])
 
 
@@ -60,7 +60,6 @@ def mount(dest, source, mount_command, mount_options, noop):
 def symlink(dest, dir_to_scan, ext, noop):
 	'''Scan a mountpoint for files with extentions and
 	   create symlinks to them.'''
-	print "found %s files in %s" % (os.listdir(dir_to_scan), dir_to_scan)
 	for f in os.listdir(dir_to_scan):
 		if ext == os.path.splitext(f)[0]:
 			print "link %s as %s" % (f, os.path.join(dest, f))
