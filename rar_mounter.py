@@ -37,10 +37,10 @@ parser.add_argument('--umount-options', nargs='*',
 args = parser.parse_args()
 
 def error(err_str):
-	sys.stderr.write("Error: %s"%(err_str, ))
+	sys.stderr.write("Error: %s\n"%(err_str, ))
 
 def warn(warn_str):
-	sys.stderr.write("Warning: %s"% (warn_str, ))
+	sys.stderr.write("Warning: %s\n"% (warn_str, ))
 
 def mount(dest, source, mount_command, mount_options, noop):
 	''' Attempt to create a mountpoint and mount the compressed file to there.'''
