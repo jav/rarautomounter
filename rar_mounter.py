@@ -10,34 +10,6 @@ import subprocess
 import sys
 
 
-parser = argparse.ArgumentParser(description='Mount a compress filed as a dir.')
-parser.add_argument('-d', '--base-dir', dest="basedir",
-						required=True,
-						help='Base directory.')
-parser.add_argument('-l', '--make-links', nargs='+',
-						default=['avi', 'mkv', 'mp4'],
-						help='Automatically add a link to any files that matches fileendings (e.g. "--make-link avi mkv mp4")')
-parser.add_argument('-n', dest='noop', action='store_true',
-						default=False,
-						help='All actions become noops')
-parser.add_argument('--mount-command',
-						default="archivemount",
-						help='Mount command.')
-parser.add_argument('--mount-options', nargs='*',
-						default=['readonly', 'allow_other'],
-						help="Optional arguments for the mount command. Single chars have '-' prepended, longer strings have '-o ' prepended.")
-parser.add_argument('--umount-command',
-						default="fusermount",
-						help="Umount command.")
-parser.add_argument('--umount-options', nargs='*',
-						default=['u', 'z'])
-parser.add_argument('--actions-log', dest="actions_log_fh",
-						type=argparse.FileType('w'),
-						default="actions.log",
-						help="Actions log for cleanup operations.")
-
-
-args = parser.parse_args()
 
 def error(err_str):
 	sys.stderr.write("Error: %s\n"%(err_str, ))
@@ -151,6 +123,37 @@ def main(**kwargs):
 	
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description='Mount a compress filed as a dir.')
+	parser.add_argument('-d', '--base-dir', dest="basedir",
+							required=True,
+							help='Base directory.')
+	parser.add_argument('-l', '--make-links', nargs='+',
+							default=['avi', 'mkv', 'mp4'],
+							help='Automatically add a link to any files that matches fileendings (e.g. "--make-link avi mkv mp4")')
+	parser.add_argument('-n', dest='noop', action='store_true',
+							default=False,
+							help='All actions become noops')
+	parser.add_argument('--mount-command',
+							default="archivemount",
+							help='Mount command.')
+	parser.add_argument('--mount-options', nargs='*',
+							default=['readonly', 'allow_other'],
+							help="Optional arguments for the mount command. Single chars have '-' prepended, longer strings have '-o ' prepended.")
+	parser.add_argument('--umount-command',
+							default="fusermount",
+							help="Umount command.")
+	parser.add_argument('--umount-options', nargs='*',
+							default=['u', 'z'])
+	parser.add_argument('--actions-log', dest="actions_log_fh",
+							type=argparse.FileType('w'),
+							default="actions.log",
+							help="Actions log for cleanup operations.")
+	parser.add_argument('--debug',
+							default=False
+							help="Debug output.")
+
+	args = parser.parse_args()
+
 	main(**vars(args))
 
 
