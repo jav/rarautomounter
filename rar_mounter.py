@@ -5,6 +5,7 @@ import file_picker
 
 #then import system libraries
 import argparse
+import logging
 import os
 import subprocess
 import sys
@@ -22,6 +23,7 @@ def actions_log(fh, cmd, arg):
 
 def mount(dest, source, mount_command, mount_options, actions_log_fh, noop):
 	''' Attempt to create a mountpoint and mount the compressed file to there.'''
+	logging.debug("mount(dest: %s, source: %s, mount_command: %s, mount_options:%s, actions_log_fh: %s, noop: %s)"%(dest, source, mount_command, mount_options, actions_log_fh, noop))
 	mount_cmd = [mount_command, source, dest]
 	for mount_option in mount_options:
 		if len(mount_option) == 1:
@@ -40,8 +42,12 @@ def mount(dest, source, mount_command, mount_options, actions_log_fh, noop):
 def symlink(dest, dir_to_scan, ext, actions_log_fh, noop):
 	'''Scan a mountpoint for files with extentions and
 	   create symlinks to them.'''
+	logging.debug("symlink(dest: %s, dir_to_scan: %s, ext: %s, actions_log_fh: %s, noop: %s)"%(dest, dir_to_scan, ext, actions_log_fh, noop))
+	print "symlink( %s, %s, %s, %s, %s)"%(dest, dir_to_scan, ext, actions_log_fh, noop)
+	print 'os.listdir("%s"): %s'%(dir_to_scan, os.listdir(dir_to_scan))
 	for f in os.listdir(dir_to_scan):
 		if ext == os.path.splitext(f)[1].replace('.', ''):
+			print "ext:", ext, "os.path.splitext(f)[1]:", os.path.splitext(f)[1]
 			print "link %s as %s" % (os.path.abspath(os.path.join(dir_to_scan, f)), os.path.join(dest, f))
 			if not noop:
 				#TODO: if the file exists, and is not a symlink, abort
@@ -57,6 +63,7 @@ def symlink(dest, dir_to_scan, ext, actions_log_fh, noop):
 					pass # Because I don't know how to handle a failure of this
 
 def create_mountpoint(mountpoint, actions_log_fh, noop):
+	logging.debug("create_mountpoint(mountpoint: %s, actions_log_fh: %s, noop: %s)"%(mountpoint, actions_log_fh, noop))
 	if len(os.listdir(mountpoint)) != 0:
 		warn("mountpoint (%s) is not empty."%(mountpoint, ))
 		if not noop:
@@ -69,6 +76,7 @@ def create_mountpoint(mountpoint, actions_log_fh, noop):
 			print "create dir %s"%mountpoint
 
 def umount(d, umount_command, umount_options, noop):
+	logging.debug("umount(d: %s, umount_command: %s, umount_options: %s, noop: %s)"%(d, umount_command, umount_options, noop))
 	umount_cmd = [umount_command, d]
 	for umount_option in umount_options:
 		if len(umount_option) == 1:
@@ -149,10 +157,16 @@ if __name__ == '__main__':
 							default="actions.log",
 							help="Actions log for cleanup operations.")
 	parser.add_argument('--debug',
-							default=False
+							dest="log_level",
+							action="store_const",
+							const=logging.DEBUG,
+							default=logging.ERROR,
 							help="Debug output.")
 
 	args = parser.parse_args()
+
+
+	logging.basicConfig(level=args.log_level)
 
 	main(**vars(args))
 
