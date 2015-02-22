@@ -61,8 +61,13 @@ def symlink(dest, dir_to_scan, ext, noop):
 	'''Scan a mountpoint for files with extentions and
 	   create symlinks to them.'''
 	for f in os.listdir(dir_to_scan):
-		if ext == os.path.splitext(f)[0]:
-			print "link %s as %s" % (f, os.path.join(dest, f))
+		if ext == os.path.splitext(f)[1].replace('.', ''):
+			print "link %s as %s" % (os.path.abspath(os.path.join(dir_to_scan, f)), os.path.join(dest, f))
+			if not noop:
+				os.symlink(
+					os.path.abspath(os.path.join(dir_to_scan, f)),
+					os.path.join(dest, f)
+					)
 
 def create_mountpoint(mountpoint, noop):
 	if len(os.listdir(mountpoint)) != 0:
