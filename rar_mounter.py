@@ -6,6 +6,7 @@ import file_picker
 #then import system libraries
 import argparse
 import logging
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -96,9 +97,8 @@ def umount(d, umount_command, umount_options, noop):
 		subprocess.call(umount_cmd)
 
 
-
-def main(**kwargs):
-	print "kwargs", kwargs
+def worker_mount(dir_name, file_name, **kwargs):
+	logging.debug("worker_mount(%s)", kwargs)
 	basedir = kwargs['basedir'] #break if this fails
 	noop = kwargs['noop']
 
@@ -112,31 +112,46 @@ def main(**kwargs):
 
 	actions_log_fh = kwargs['actions_log_fh']
 
+	full_file_name = os.path.join(dir_name, file_name)
+	mountpoint = "%s.mountpoint" % full_file_name
+	source = full_file_name
+
+	if os.path.isdir(mountpoint):
+		if os.listdir(mountpoint) > 0:
+			umount(mountpoint, umount_command, umount_options, noop)
+			if os.listdir(mountpoint) > 0:
+				error("Mountpoint %s already exists and contains (%s) files. Could not unmount."%(mountpoint, len(os.listdir(mountpoint))))
+				return False
+	else:
+		create_mountpoint(mountpoint, actions_log_fh, noop)
+
+	mount(mountpoint, source, mount_command, mount_options, actions_log_fh, noop)
+	time.sleep(1)
+	logging.debug("OS.LISTDIR(%s): %s"%(mountpoint, os.listdir(mountpoint)))
+	for ext in make_links:
+		dir_to_scan = mountpoint
+		symlink(dir_name, mountpoint, ext, actions_log_fh, noop)
+	return True
+
+
+
+def main(**kwargs):
+	print "kwargs", kwargs
 
 	fp = file_picker.FilePicker()
-	fp.set(basedir)
+	fp.set(kwargs['basedir'])
 
+	worker_pool = multiprocessing.Pool(processes=128)
 
 	for dir_name, file_name in fp.get_rars():
-		full_file_name = os.path.join(dir_name, file_name)
-		mountpoint = "%s.mountpoint" % full_file_name
-		source = full_file_name
-		
-		if os.path.isdir(mountpoint):
-			if os.listdir(mountpoint) > 0:
-				umount(mountpoint, umount_command, umount_options, noop)
-				if os.listdir(mountpoint) > 0:
-					error("Mountpoint %s already exists and contains (%s) files. Could not unmount."%(mountpoint, len(os.listdir(mountpoint))))
-					continue
-		else:
-			create_mountpoint(mountpoint, actions_log_fh, noop)
+		worker_args = kwargs
+		#worker_args.update({'dir_name': dir_name, 'file_name': file_name})
+		logging.debug("worker_pool.apply_async(%s, %s)", worker_mount, worker_args)
+		worker_pool.apply_async(worker_mount, [dir_name, file_name], worker_args)
 
-		mount(mountpoint, source, mount_command, mount_options, actions_log_fh, noop)
-		time.sleep(1)
-		logging.debug("OS.LISTDIR(%s): %s"%(mountpoint, os.listdir(mountpoint)))
-		for ext in make_links:
-			dir_to_scan = mountpoint
-			symlink(dir_name, mountpoint, ext, actions_log_fh, noop)
+	worker_pool.close()
+	logging.debug("Done dispatching workers. Waiting for join()")
+	worker_pool.join()
 
 
 	
