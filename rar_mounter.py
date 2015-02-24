@@ -119,6 +119,7 @@ def worker_mount(dir_name, file_name, **kwargs):
 	if os.path.isdir(mountpoint):
 		if os.listdir(mountpoint) > 0:
 			umount(mountpoint, umount_command, umount_options, noop)
+			time.sleep(1)
 			if os.listdir(mountpoint) > 0:
 				error("Mountpoint %s already exists and contains (%s) files. Could not unmount."%(mountpoint, len(os.listdir(mountpoint))))
 				return False
