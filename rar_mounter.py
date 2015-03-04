@@ -36,9 +36,12 @@ def mount(dest, source, mount_command, mount_options, actions_log_fh, noop):
 		print "mount(): subprocess.call(%s)" % (mount_cmd, )
 	if not noop:
 		print "subprocess.call(%s)" % (mount_cmd, )
-		ret = subprocess.call(mount_cmd)
-		if ret == 0:
-			actions_log(actions_log_fh, "mount", dest)
+		try:		
+			ret = subprocess.call(mount_cmd)
+			if ret == 0:
+				actions_log(actions_log_fh, "mount", dest)
+		except Exception as e:
+			print e
 
 def symlink(dest, dir_to_scan, ext, actions_log_fh, noop):
 	'''Scan a mountpoint for files with extentions and
